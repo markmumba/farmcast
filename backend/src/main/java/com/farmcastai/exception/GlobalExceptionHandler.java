@@ -2,6 +2,7 @@ package com.farmcastai.exception;
 
 import com.farmcastai.common.response.BaseResponse;
 import com.farmcastai.common.response.ResponseBuilder;
+import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import java.util.Optional;
@@ -48,6 +49,30 @@ public class GlobalExceptionHandler {
         }
 
         return new ResponseEntity<>(body, headers, exception.getStatusCode());
+    }
+
+    // ── Resiliency: circuit breaker open / connectivity failure ───────────────
+
+    @ExceptionHandler(CallNotPermittedException.class)
+    public ResponseEntity<BaseResponse<Void>> handleCircuitBreakerOpen(
+            CallNotPermittedException exception, HttpServletRequest request) {
+
+        log.warn("[{}] {} → circuit breaker OPEN, WeatherAI requests blocked",
+                request.getMethod(), request.getRequestURI());
+
+        return ResponseBuilder.error(HttpStatus.SERVICE_UNAVAILABLE,
+                "WeatherAI is temporarily unavailable, please try again in a moment");
+    }
+
+    @ExceptionHandler(WeatherAiUnavailableException.class)
+    public ResponseEntity<BaseResponse<Void>> handleWeatherAiUnavailable(
+            WeatherAiUnavailableException exception, HttpServletRequest request) {
+
+        log.error("[{}] {} → WeatherAI unreachable after retries: {}",
+                request.getMethod(), request.getRequestURI(), exception.getMessage());
+
+        return ResponseBuilder.error(HttpStatus.SERVICE_UNAVAILABLE,
+                "WeatherAI service is currently unavailable, please try again later");
     }
 
     // ── Application configuration errors ─────────────────────────────────────

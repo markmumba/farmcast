@@ -19,12 +19,28 @@ weather-ai:
   base-url: ${WEATHER_AI_BASE_URL:https://api.weather-ai.co}
   api-key: ${WEATHER_AI_API_KEY:}
 
+resilience:
+  weather-ai:
+    connect-timeout-seconds: 5
+    read-timeout-seconds: 30
+    retry:
+      max-attempts: 3
+      initial-wait-seconds: 1
+      multiplier: 2.0
+      jitter-factor: 0.5
+      max-wait-seconds: 10
+    circuit-breaker:
+      sliding-window-size: 10
+      minimum-calls: 5
+      failure-rate-threshold: 50.0
+      slow-call-rate-threshold: 80.0
+      slow-call-duration-seconds: 20
+      wait-duration-open-seconds: 30
+      half-open-calls: 3
+
 logging:
-  # Override per-package levels here without touching logback-spring.xml.
-  # These are also respected by the <springProfile> blocks in logback-spring.xml.
   level:
     com.farmcastai: DEBUG
     org.springframework.web.client: WARN
   file:
-    # Mirrors the path set in logback-spring.xml; useful for Spring Boot Actuator /logfile
     name: logs/farmcast-ai-backend.log
