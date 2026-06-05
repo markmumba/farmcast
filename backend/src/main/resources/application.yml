@@ -1,0 +1,29 @@
+spring:
+  config:
+    import: optional:file:./.env[.properties]
+  application:
+    name: farmcast-ai-backend
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 21MB
+
+server:
+  port: ${SERVER_PORT:8080}
+
+app:
+  frontend-url: ${FRONTEND_URL:http://localhost:4200}
+
+weather-ai:
+  base-url: ${WEATHER_AI_BASE_URL:https://api.weather-ai.co}
+  api-key: ${WEATHER_AI_API_KEY:}
+
+logging:
+  # Override per-package levels here without touching logback-spring.xml.
+  # These are also respected by the <springProfile> blocks in logback-spring.xml.
+  level:
+    com.farmcastai: DEBUG
+    org.springframework.web.client: WARN
+  file:
+    # Mirrors the path set in logback-spring.xml; useful for Spring Boot Actuator /logfile
+    name: logs/farmcast-ai-backend.log

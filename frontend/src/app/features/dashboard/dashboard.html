@@ -1,0 +1,466 @@
+<main class="app-shell">
+  <section class="hero" aria-label="FarmCast AI overview">
+    <video class="hero-video" autoplay muted loop playsinline preload="metadata" [poster]="heroPosterUrl">
+      <source [src]="heroVideoUrl" type="video/mp4" />
+    </video>
+    <div class="hero-overlay"></div>
+
+    <nav class="topbar" aria-label="Main navigation">
+      <a class="brand" href="/" aria-label="FarmCast AI home">
+        <span class="brand-mark">F</span>
+        <span>FarmCast AI</span>
+      </a>
+
+      <p-tag
+        styleClass="status-tag"
+        [rounded]="true"
+        [severity]="backendTagSeverity()"
+        [value]="backendTagLabel()"
+      />
+    </nav>
+
+    <div class="hero-content">
+      <div class="hero-copy">
+        <p class="eyebrow">WeatherAI farm intelligence</p>
+        <h1>FarmCast AI</h1>
+        <p>
+          Weather, canopy health, quota, and field recommendations in one working dashboard.
+        </p>
+
+        <div class="hero-actions">
+          <p-button
+            icon="pi pi-cloud"
+            label="Run forecast"
+            styleClass="hero-action"
+            type="button"
+            (onClick)="fetchWeather()"
+          />
+          <a class="secondary-action" href="#canopy">Analyze canopy</a>
+        </div>
+      </div>
+
+      <div class="hero-stats" aria-label="API snapshot">
+        <div>
+          <span>Backend</span>
+          <strong>{{ backendStatus() }}</strong>
+        </div>
+        <div>
+          <span>Weather usage</span>
+          <strong>{{ usageLabel() }}</strong>
+        </div>
+        <div>
+          <span>Tree quota</span>
+          <strong>{{ quotaLabel() }}</strong>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="dashboard-grid" aria-label="Farm dashboard">
+    <p-card styleClass="farm-card form-panel">
+      <div class="panel-heading">
+        <p class="eyebrow">Farm profile</p>
+        <h2>Location</h2>
+      </div>
+
+      <form [formGroup]="farmForm" (ngSubmit)="fetchWeather()">
+        <label>
+          Farm name
+          <input pInputText formControlName="farmName" type="text" />
+        </label>
+
+        <div class="field-row">
+          <label>
+            Latitude
+            <input
+              pInputText
+              formControlName="lat"
+              id="lat"
+              type="number"
+              inputmode="decimal"
+              step="any"
+              min="-90"
+              max="90"
+            />
+          </label>
+          <label>
+            Longitude
+            <input
+              pInputText
+              formControlName="lon"
+              id="lon"
+              type="number"
+              inputmode="decimal"
+              step="any"
+              min="-180"
+              max="180"
+            />
+          </label>
+        </div>
+
+        <div class="field-row">
+          <label>
+            Forecast days
+            <p-inputnumber
+              formControlName="days"
+              inputId="days"
+              [min]="1"
+              [max]="16"
+              [useGrouping]="false"
+            />
+          </label>
+          <label>
+            Units
+            <p-select
+              formControlName="units"
+              inputId="units"
+              [options]="unitsOptions"
+              optionLabel="label"
+              optionValue="value"
+              appendTo="body"
+            />
+          </label>
+        </div>
+
+        <div class="field-row align-end">
+          <label>
+            Language
+            <p-select
+              formControlName="lang"
+              inputId="lang"
+              [options]="languageOptions"
+              optionLabel="label"
+              optionValue="value"
+              appendTo="body"
+            />
+          </label>
+
+          <label class="checkbox-field" for="ai-summary">
+            <p-checkbox formControlName="ai" inputId="ai-summary" [binary]="true" />
+            <span>AI summary</span>
+          </label>
+        </div>
+
+        @if (weatherError()) {
+          <p-message severity="error" icon="pi pi-exclamation-triangle">
+            {{ weatherError() }}
+          </p-message>
+        }
+
+        <p-button
+          icon="pi pi-cloud-download"
+          label="Fetch forecast"
+          styleClass="full-action"
+          type="submit"
+          [loading]="weatherLoading()"
+        />
+      </form>
+    </p-card>
+
+    <p-card styleClass="farm-card forecast-panel">
+      <div class="panel-heading split-heading">
+        <div>
+          <p class="eyebrow">Forecast</p>
+          <h2>{{ farmForm.controls.farmName.value }}</h2>
+        </div>
+        <p-tag severity="info" [value]="farmForm.controls.days.value + ' days'" />
+      </div>
+
+      @if (weatherLoading()) {
+        <div class="loading-state">
+          <p-progressSpinner ariaLabel="Loading forecast" />
+        </div>
+      } @else {
+        <p-message severity="info" icon="pi pi-sparkles">
+          {{ weatherSummary() }}
+        </p-message>
+
+        <div class="metric-grid">
+          @for (metric of weatherMetrics(); track metric.label) {
+            <article class="metric-card" [class]="metric.tone">
+              <i [class]="metric.icon"></i>
+              <span>{{ metric.label }}</span>
+              <strong>{{ metric.value }}</strong>
+            </article>
+          }
+        </div>
+      }
+    </p-card>
+
+    <p-card styleClass="farm-card api-panel">
+      <div class="panel-heading">
+        <p class="eyebrow">Account</p>
+        <h2>API resources</h2>
+      </div>
+
+      @if (resourceError()) {
+        <p-message severity="warn" icon="pi pi-key">
+          {{ resourceError() }}
+        </p-message>
+      }
+
+      <div class="resource-stack">
+        <div class="resource-item">
+          <span>Weather usage</span>
+          <strong>{{ usageLoading() ? 'Loading' : usageLabel() }}</strong>
+        </div>
+        <div class="resource-item">
+          <span>Tree analysis quota</span>
+          <strong>{{ quotaLoading() ? 'Loading' : quotaLabel() }}</strong>
+        </div>
+      </div>
+
+      <p-meterGroup [value]="quotaMeter()" [max]="100" />
+    </p-card>
+
+  </section>
+
+  <section class="data-section">
+    <p-card styleClass="farm-card table-panel">
+      <div class="panel-heading split-heading">
+        <div>
+          <p class="eyebrow">Daily outlook</p>
+          <h2>Forecast table</h2>
+        </div>
+      </div>
+
+      @if (forecastRows().length > 0) {
+        <p-table [value]="forecastRows()" styleClass="forecast-table">
+          <ng-template pTemplate="header">
+            <tr>
+              <th>Day</th>
+              <th>Temp range</th>
+              <th>Rain chance</th>
+              <th>Max wind</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-row>
+            <tr>
+              <td>{{ row.label }}</td>
+              <td>{{ row.temperature }}</td>
+              <td>{{ row.rain }}</td>
+              <td>{{ row.wind }}</td>
+            </tr>
+          </ng-template>
+        </p-table>
+      } @else {
+        <div class="empty-state">
+          <i class="pi pi-calendar"></i>
+          <strong>No forecast loaded</strong>
+        </div>
+      }
+    </p-card>
+
+    <p-card styleClass="farm-card table-panel">
+      <div class="panel-heading split-heading">
+        <div>
+          <p class="eyebrow">Hourly outlook</p>
+          <h2>Next hours</h2>
+        </div>
+      </div>
+
+      @if (hourlyRows().length > 0) {
+        <p-table [value]="hourlyRows()" styleClass="forecast-table">
+          <ng-template pTemplate="header">
+            <tr>
+              <th>Time</th>
+              <th>Temp</th>
+              <th>Rain chance</th>
+              <th>Wind</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-row>
+            <tr>
+              <td>{{ row.label }}</td>
+              <td>{{ row.temperature }}</td>
+              <td>{{ row.rain }}</td>
+              <td>{{ row.wind }}</td>
+            </tr>
+          </ng-template>
+        </p-table>
+      } @else {
+        <div class="empty-state">
+          <i class="pi pi-clock"></i>
+          <strong>No hourly forecast loaded</strong>
+        </div>
+      }
+    </p-card>
+  </section>
+
+  <section id="canopy" class="canopy-section" aria-label="Tree canopy analysis">
+    <div class="section-heading">
+      <p class="eyebrow">Canopy intelligence</p>
+      <h2>Tree analysis</h2>
+    </div>
+
+    <div class="canopy-grid">
+      <p-card styleClass="farm-card upload-panel">
+        <form [formGroup]="treeForm">
+          <div class="panel-heading">
+            <p class="eyebrow">Farm image</p>
+            <h3>Upload</h3>
+          </div>
+
+          <input
+            #imageInput
+            class="file-input"
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            (change)="onImageSelected($event)"
+          />
+
+          <button
+            class="upload-zone"
+            type="button"
+            (click)="imageInput.click()"
+            [class.has-preview]="selectedImagePreview()"
+          >
+            @if (selectedImagePreview()) {
+              <img [src]="selectedImagePreview()!" alt="Selected farm image preview" />
+            } @else {
+              <span>
+                <i class="pi pi-image"></i>
+                Choose image
+              </span>
+            }
+          </button>
+
+          <div class="field-row">
+            <label>
+              Farmer ID
+              <input pInputText formControlName="farmerId" type="text" />
+            </label>
+            <label>
+              County
+              <input pInputText formControlName="county" type="text" />
+            </label>
+          </div>
+
+          <div class="field-row">
+            <label>
+              Land acres
+              <p-inputnumber
+                formControlName="landAcres"
+                inputId="landAcres"
+                [min]="0"
+                [maxFractionDigits]="2"
+                [useGrouping]="false"
+              />
+            </label>
+            <label>
+              Location
+              <input pInputText formControlName="location" type="text" />
+            </label>
+          </div>
+
+          <label>
+            Notes
+            <textarea pTextarea formControlName="notes" rows="4"></textarea>
+          </label>
+
+          @if (analysisError()) {
+            <p-message severity="error" icon="pi pi-exclamation-triangle">
+              {{ analysisError() }}
+            </p-message>
+          }
+
+          <p-button
+            icon="pi pi-send"
+            label="Analyze trees"
+            styleClass="full-action"
+            type="button"
+            [loading]="analysisLoading()"
+            (onClick)="analyzeTrees()"
+          />
+        </form>
+      </p-card>
+
+      <p-card styleClass="farm-card analysis-panel">
+        <div class="panel-heading">
+          <p class="eyebrow">Results</p>
+          <h3>Canopy profile</h3>
+        </div>
+
+        @if (analysisLoading()) {
+          <div class="loading-state">
+            <p-progressSpinner ariaLabel="Loading analysis" />
+          </div>
+        } @else {
+          <div class="analysis-image">
+            @if (overlayImageUrl()) {
+              <img [src]="overlayImageUrl()!" alt="WeatherAI tree analysis overlay" />
+            } @else if (selectedImagePreview()) {
+              <img [src]="selectedImagePreview()!" alt="Selected farm image preview" />
+            } @else {
+              <div class="empty-state">
+                <i class="pi pi-sitemap"></i>
+                <strong>No canopy result</strong>
+              </div>
+            }
+          </div>
+
+          <div class="canopy-stats">
+            @for (metric of canopyMetrics(); track metric.label) {
+              <article>
+                <span>{{ metric.label }}</span>
+                <strong>{{ metric.value }}</strong>
+                <small>{{ metric.detail }}</small>
+              </article>
+            }
+          </div>
+
+          @if (recommendations().length > 0) {
+            <p-divider />
+            <ul class="recommendation-list">
+              @for (recommendation of recommendations(); track recommendation) {
+                <li>{{ recommendation }}</li>
+              }
+            </ul>
+          }
+        }
+      </p-card>
+    </div>
+  </section>
+
+  <section class="data-section">
+    <p-card styleClass="farm-card table-panel">
+      <div class="panel-heading">
+        <p class="eyebrow">History</p>
+        <h2>Tree analyses</h2>
+      </div>
+
+      @if (historyLoading()) {
+        <div class="loading-state compact">
+          <p-progressSpinner ariaLabel="Loading history" />
+        </div>
+      } @else if (historyRows().length > 0) {
+        <p-table [value]="historyRows()" styleClass="forecast-table">
+          <ng-template pTemplate="header">
+            <tr>
+              <th>ID</th>
+              <th>Date</th>
+              <th>County</th>
+              <th>Trees</th>
+              <th>Health</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-row>
+            <tr>
+              <td>{{ row.id }}</td>
+              <td>{{ row.date }}</td>
+              <td>{{ row.county }}</td>
+              <td>{{ row.treeCount }}</td>
+              <td>{{ row.health }}</td>
+            </tr>
+          </ng-template>
+        </p-table>
+      } @else {
+        <div class="empty-state">
+          <i class="pi pi-history"></i>
+          <strong>No history loaded</strong>
+        </div>
+      }
+    </p-card>
+
+  </section>
+</main>

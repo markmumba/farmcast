@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+  <!-- ── Import Spring Boot defaults (log levels, patterns) ── -->
+  <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+
+  <!-- App name from application.yml -->
+  <springProperty scope="context" name="APP_NAME"
+                  source="spring.application.name"
+                  defaultValue="farmcast-ai"/>
+
+  <!-- ══════════════════════════════════════════════════════════
+       CONSOLE – coloured, human-readable
+       ══════════════════════════════════════════════════════════ -->
+  <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+      <pattern>%d{HH:mm:ss.SSS} %highlight(%-5level) %cyan([%15.15thread]) %yellow(%-40.40logger{39}) : %msg%n</pattern>
+      <charset>UTF-8</charset>
+    </encoder>
+  </appender>
+
+  <!-- ══════════════════════════════════════════════════════════
+       FILE – rolling daily, gzip, 30 days / 500 MB total
+       ══════════════════════════════════════════════════════════ -->
+  <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>logs/${APP_NAME}.log</file>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <!-- Daily rollover, gzip archive -->
+      <fileNamePattern>logs/${APP_NAME}-%d{yyyy-MM-dd}.log.gz</fileNamePattern>
+      <maxHistory>30</maxHistory>
+      <totalSizeCap>500MB</totalSizeCap>
+    </rollingPolicy>
+    <encoder>
+      <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] %-40.40logger{39} : %msg%n</pattern>
+      <charset>UTF-8</charset>
+    </encoder>
+  </appender>
+
+  <!-- ══════════════════════════════════════════════════════════
+       PACKAGE LOG LEVELS
+       ══════════════════════════════════════════════════════════ -->
+
+  <!-- Application code – DEBUG so request/response traces show -->
+  <logger name="com.farmcastai" level="DEBUG" additivity="false">
+    <appender-ref ref="CONSOLE"/>
+    <appender-ref ref="FILE"/>
+  </logger>
+
+  <!-- Spring Web – WARN to suppress noisy framework lines       -->
+  <logger name="org.springframework.web" level="WARN"/>
+
+  <!-- RestClient / HTTP internals – useful when debugging API calls;
+       switch to DEBUG in dev if you need raw HTTP traces          -->
+  <logger name="org.springframework.web.client" level="WARN"/>
+
+  <!-- Multipart / file upload                                    -->
+  <logger name="org.springframework.web.multipart" level="WARN"/>
+
+  <!-- ══════════════════════════════════════════════════════════
+       SPRING PROFILE OVERRIDES
+       ══════════════════════════════════════════════════════════ -->
+  <springProfile name="dev">
+    <logger name="com.farmcastai" level="DEBUG"/>
+    <logger name="org.springframework.web.client" level="DEBUG"/>
+  </springProfile>
+
+  <springProfile name="prod">
+    <logger name="com.farmcastai" level="INFO"/>
+  </springProfile>
+
+  <!-- ══════════════════════════════════════════════════════════
+       ROOT
+       ══════════════════════════════════════════════════════════ -->
+  <root level="INFO">
+    <appender-ref ref="CONSOLE"/>
+    <appender-ref ref="FILE"/>
+  </root>
+
+</configuration>

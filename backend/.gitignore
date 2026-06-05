@@ -1,0 +1,10 @@
+target/
+.mvn/
+mvnw
+mvnw.cmd
+
+*.log
+.DS_Store
+
+.env
+application-local.properties
