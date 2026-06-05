@@ -25,7 +25,10 @@ public class CorsConfig {
             return new String[]{"http://localhost:4200"};
         }
 
-        return frontendUrl.split(",");
+        return Arrays.stream(frontendUrl.split(","))
+                .map(String::trim)
+                .filter(origin -> !origin.isBlank())
+                .toArray(String[]::new);
     }
 
     @Bean

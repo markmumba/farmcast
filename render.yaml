@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: farmcast-ai-backend
+    runtime: docker
+    plan: free
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /api/health
+    envVars:
+      - key: WEATHER_AI_BASE_URL
+        value: https://api.weather-ai.co
+      - key: WEATHER_AI_API_KEY
+        sync: false
+      - key: FRONTEND_URL
+        value: https://farmcast-ai-frontend.onrender.com
+
+  - type: web
+    name: farmcast-ai-frontend
+    runtime: static
+    buildCommand: cd frontend && npm ci && npm run build
+    staticPublishPath: frontend/dist/farmcast-ai/browser
+    envVars:
+      - key: BACKEND_URL
+        value: https://farmcast-ai-backend.onrender.com
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

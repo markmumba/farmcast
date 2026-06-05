@@ -55,13 +55,4 @@ Send `multipart/form-data` to `POST /api/v1/trees/analyze`.
 - `location` optional
 - `notes` optional
 
-## Structure
 
-The backend follows the same module-oriented layout as the CloudIt backend:
-
-- `common/response` shared API response helpers
-- `config` application configuration
-- `config/properties` typed configuration properties
-- `modules/<feature>/controller` REST controllers
-- `modules/<feature>/dto` request/response DTOs
-- `modules/<feature>/service` business logic

@@ -1,0 +1,9 @@
+target/
+logs/
+.env
+.idea/
+.mvn/
+mvnw
+mvnw.cmd
+*.log
+.DS_Store
