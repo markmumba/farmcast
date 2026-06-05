@@ -17,9 +17,11 @@ services:
   - type: web
     name: farmcast-ai-frontend
     runtime: static
-    buildCommand: cd frontend && npm ci && npm run build
+    buildCommand: cd frontend && npm install && npm run env && ./node_modules/.bin/ng build
     staticPublishPath: frontend/dist/farmcast-ai/browser
     envVars:
+      - key: NODE_VERSION
+        value: 22.12.0
       - key: BACKEND_URL
         value: https://farmcast-ai-backend.onrender.com
     routes:
